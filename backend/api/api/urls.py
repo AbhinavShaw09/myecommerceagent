@@ -18,7 +18,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from customers import views
+from . import views as api_views
 
 router = DefaultRouter()
 router.register(r'customers', views.CustomerViewSet)
@@ -28,7 +29,7 @@ router.register(r'campaigns', views.CampaignViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("health/", views.health_check, name="health_check"),
+    path("health/", api_views.health_check, name="health_check"),
     path('api/', include(router.urls)),
     path('api/generate/', views.generate_segment_and_campaign, name='generate'),
 ]

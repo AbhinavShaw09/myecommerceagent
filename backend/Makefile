@@ -4,7 +4,7 @@ dev:
 	source venv/bin/activate && cd api && python manage.py runserver
 
 migrate:
-	source venv/bin/activate && cd api && python manage.py makemigrations && python manage.py migrate
+	source venv/bin/activate && cd api && python manage.py makemigrations customers && python manage.py migrate
 
 setup: migrate
 	source venv/bin/activate && cd api && python manage.py create_sample_data

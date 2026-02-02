@@ -4,17 +4,20 @@ A full-stack agentic AI application for email marketing and customer data manage
 
 ## Features
 
-1. **Customer Management** - Store and manage customer information including email, phone, address, and e-commerce metrics
-2. **Customer Segments** - Create dynamic customer segments based on various criteria (location, LTV, purchase behavior, etc.)
-3. **Email Flows** - Build multi-step email sequences with delays
-4. **AI Assistant** - Generate customer segments and campaign ideas using AI
+1. **Customer Management** - Full CRUD with Create, Read, Update, Delete operations
+2. **Customer Segments** - Full CRUD with dynamic condition builder (field, operator, value)
+3. **Email Flows** - Full CRUD with multi-step email sequence builder
+4. **Campaigns** - Full CRUD to combine segments with email flows
+5. **AI Assistant** - Generate customer segments and campaign ideas using AI
 
 ## Tech Stack
 
 - **Backend**: Django + Django REST Framework
-- **Frontend**: Next.js + TypeScript + Tailwind CSS
+- **Frontend**: Next.js 16 + TypeScript + Tailwind CSS + shadcn/ui
 - **Database**: SQLite
 - **AI**: Simple rule-based logic (can be extended with OpenAI/Claude)
+- **Forms**: React Hook Form + Zod validation
+- **Notifications**: Sonner toast library
 
 ## Quick Start
 

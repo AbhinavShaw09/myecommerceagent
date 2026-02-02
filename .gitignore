@@ -12,6 +12,9 @@ backend/**/*.pyc
 backend/api/db.sqlite3
 backend/.env
 
+# Sisyphus
+.sisyphus/
+
 # IDE files
 .vscode/
 .idea/

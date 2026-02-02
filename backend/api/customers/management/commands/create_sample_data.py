@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.models import Customer
+from customers.models import Customer
 from datetime import datetime, timedelta
 from django.utils import timezone
 import random
