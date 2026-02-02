@@ -1,10 +1,13 @@
-.PHONY: dev migrate install clean
+.PHONY: dev migrate install clean setup
 
 dev:
 	source venv/bin/activate && cd api && python manage.py runserver
 
 migrate:
-	source venv/bin/activate && cd api && python manage.py migrate
+	source venv/bin/activate && cd api && python manage.py makemigrations && python manage.py migrate
+
+setup: migrate
+	source venv/bin/activate && cd api && python manage.py create_sample_data
 
 install:
 	source venv/bin/activate && pip install -r requirements.txt
