@@ -1,0 +1,26 @@
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env*
+
+# Backend (Django)
+backend/venv/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/api/db.sqlite3
+backend/.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+._*
+
+# Logs
+*.log
