@@ -44,6 +44,7 @@ interface Campaign {
   is_active: boolean
   segment_name?: string
   flow_name?: string
+  customer_count?: number
   created_at: string
 }
 
@@ -60,17 +61,6 @@ interface Flow {
   description: string
   is_active: boolean
   steps: any[]
-}
-
-interface Campaign {
-  id: number
-  name: string
-  segment: number
-  flow: number
-  is_active: boolean
-  segment_name?: string
-  flow_name?: string
-  created_at: string
 }
 
 export default function CampaignsPage() {
@@ -307,6 +297,7 @@ export default function CampaignsPage() {
                   <div className="flex items-center gap-3 text-sm text-gray-500">
                     <span>Segment: <strong>{campaign.segment_name || 'Unknown'}</strong></span>
                     <span>Flow: <strong>{campaign.flow_name || 'Unknown'}</strong></span>
+                    <span>Customers: <strong>{campaign.customer_count ?? 0}</strong></span>
                     <span>Created {new Date(campaign.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>

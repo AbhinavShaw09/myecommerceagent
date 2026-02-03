@@ -70,17 +70,15 @@ const OPERATORS = [
 interface SegmentFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: SegmentFormData) => Promise<void>
+  onSuccess?: () => void
   initialData?: Partial<SegmentFormData>
-  isSubmitting: boolean
 }
 
 export function SegmentForm({
   open,
   onOpenChange,
-  onSubmit,
+  onSuccess,
   initialData,
-  isSubmitting,
 }: SegmentFormProps) {
   const form = useForm<SegmentFormData>({
     resolver: zodResolver(segmentSchema),
@@ -98,11 +96,25 @@ export function SegmentForm({
   })
 
   const handleSubmit = async (data: SegmentFormData) => {
-    await onSubmit(data)
-    if (!initialData) {
-      form.reset()
+    try {
+      const response = await fetch('http://localhost:8000/api/segments/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+      
+      if (response.ok) {
+        if (!initialData) {
+          form.reset()
+        }
+        onSuccess?.()
+        onOpenChange(false)
+      }
+    } catch (error) {
+      console.error('Error creating segment:', error)
     }
-    onOpenChange(false)
   }
 
   const addCondition = () => {
@@ -270,12 +282,12 @@ export function SegmentForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={form.formState.isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : initialData ? 'Update Segment' : 'Create Segment'}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Saving...' : initialData ? 'Update Segment' : 'Create Segment'}
               </Button>
             </DialogFooter>
           </form>

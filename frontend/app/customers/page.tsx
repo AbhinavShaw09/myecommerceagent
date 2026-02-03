@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { CustomerForm } from './components/CustomerForm'
 
 interface Customer {
   id: number
@@ -20,6 +21,7 @@ interface Customer {
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     fetchCustomers()
@@ -35,6 +37,11 @@ export default function CustomersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCustomerAdded = () => {
+    fetchCustomers()
+    setShowForm(false)
   }
 
   if (loading) {
@@ -53,7 +60,10 @@ export default function CustomersPage() {
             <Link href="/" className="px-4 py-2 text-muted-foreground hover:text-foreground">
               ← Back to Dashboard
             </Link>
-            <button className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+            <button 
+              onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
               Add Customer
             </button>
           </div>
@@ -115,6 +125,12 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      <CustomerForm 
+        open={showForm} 
+        onOpenChange={setShowForm}
+        onSuccess={handleCustomerAdded}
+      />
     </div>
   )
 }

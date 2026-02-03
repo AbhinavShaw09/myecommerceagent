@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -46,17 +45,15 @@ export type CustomerFormData = z.infer<typeof customerSchema>
 interface CustomerFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: CustomerFormData) => Promise<void>
+  onSuccess?: () => void
   initialData?: Partial<CustomerFormData>
-  isSubmitting: boolean
 }
 
 export function CustomerForm({
   open,
   onOpenChange,
-  onSubmit,
+  onSuccess,
   initialData,
-  isSubmitting,
 }: CustomerFormProps) {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -90,9 +87,23 @@ export function CustomerForm({
   })
 
   const handleSubmit = async (data: CustomerFormData) => {
-    await onSubmit(data)
-    form.reset()
-    onOpenChange(false)
+    try {
+      const response = await fetch('http://localhost:8000/api/customers/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+      
+      if (response.ok) {
+        form.reset()
+        onSuccess?.()
+        onOpenChange(false)
+      }
+    } catch (error) {
+      console.error('Error creating customer:', error)
+    }
   }
 
   return (
@@ -316,12 +327,12 @@ export function CustomerForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={form.formState.isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : initialData ? 'Update Customer' : 'Create Customer'}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Saving...' : initialData ? 'Update Customer' : 'Create Customer'}
               </Button>
             </DialogFooter>
           </form>

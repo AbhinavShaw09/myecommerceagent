@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { FlowForm } from './components/FlowForm'
 
 interface Flow {
   id: number
@@ -23,6 +24,7 @@ interface FlowStep {
 export default function FlowsPage() {
   const [flows, setFlows] = useState<Flow[]>([])
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     fetchFlows()
@@ -38,6 +40,11 @@ export default function FlowsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFlowAdded = () => {
+    fetchFlows()
+    setShowForm(false)
   }
 
   if (loading) {
@@ -56,7 +63,10 @@ export default function FlowsPage() {
             <Link href="/" className="px-4 py-2 text-muted-foreground hover:text-foreground">
               ← Back to Dashboard
             </Link>
-            <button className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+            <button 
+              onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            >
               Create Flow
             </button>
           </div>
@@ -125,13 +135,22 @@ export default function FlowsPage() {
             <div className="bg-card shadow rounded-lg p-12 text-center border border-border">
               <h3 className="text-lg font-medium text-card-foreground mb-2">No email flows yet</h3>
               <p className="text-muted-foreground mb-4">Create your first email flow to automate customer communication</p>
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90">
+              <button 
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+              >
                 Create Your First Flow
               </button>
             </div>
           )}
         </div>
       </div>
+
+      <FlowForm 
+        open={showForm} 
+        onOpenChange={setShowForm}
+        onSuccess={handleFlowAdded}
+      />
     </div>
   )
 }

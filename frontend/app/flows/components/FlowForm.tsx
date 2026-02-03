@@ -45,17 +45,15 @@ export type FlowFormData = z.infer<typeof flowSchema>
 interface FlowFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (data: FlowFormData) => Promise<void>
+  onSuccess?: () => void
   initialData?: Partial<FlowFormData>
-  isSubmitting: boolean
 }
 
 export function FlowForm({
   open,
   onOpenChange,
-  onSubmit,
+  onSuccess,
   initialData,
-  isSubmitting,
 }: FlowFormProps) {
   const form = useForm<FlowFormData>({
     resolver: zodResolver(flowSchema),
@@ -83,11 +81,25 @@ export function FlowForm({
   })
 
   const handleSubmit = async (data: FlowFormData) => {
-    await onSubmit(data)
-    if (!initialData) {
-      form.reset()
+    try {
+      const response = await fetch('http://localhost:8000/api/flows/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+      
+      if (response.ok) {
+        if (!initialData) {
+          form.reset()
+        }
+        onSuccess?.()
+        onOpenChange(false)
+      }
+    } catch (error) {
+      console.error('Error creating flow:', error)
     }
-    onOpenChange(false)
   }
 
   const addStep = () => {
@@ -284,12 +296,12 @@ export function FlowForm({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={form.formState.isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : initialData ? 'Update Flow' : 'Create Flow'}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Saving...' : initialData ? 'Update Flow' : 'Create Flow'}
               </Button>
             </DialogFooter>
           </form>
