@@ -1,3 +1,5 @@
+import sys
+import os
 from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, action
@@ -13,6 +15,12 @@ import json
 from datetime import datetime, timedelta
 from django.utils import timezone
 
+# Add parent directory to path for gemini_campaign_agent import
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from gemini_campaign_agent import GeminiCampaignAgent
+
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
@@ -24,82 +32,121 @@ class SegmentViewSet(viewsets.ModelViewSet):
     serializer_class = SegmentSerializer
 
     @action(detail=True, methods=["get"])
-    def customers(self, request, pk=None):
-        segment = self.get_object()
-        customers = segment.get_customers()
-        serializer = CustomerSerializer(customers, many=True)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=["get"])
     def preview(self, request, pk=None):
+        """Preview customers that match this segment"""
         segment = self.get_object()
         customers = segment.get_customers()
-        count = customers.count()
-        sample = customers[:5]
-        serializer = CustomerSerializer(sample, many=True)
-        return Response({"count": count, "sample": serializer.data})
+        return Response(
+            {
+                "count": customers.count(),
+                "customers": CustomerSerializer(
+                    customers[:10], many=True
+                ).data,  # First 10 for preview
+            }
+        )
 
 
 class FlowViewSet(viewsets.ModelViewSet):
     queryset = Flow.objects.all()
     serializer_class = FlowSerializer
 
+    @action(detail=True, methods=["get"])
+    def steps(self, request, pk=None):
+        """Get all steps for this flow"""
+        flow = self.get_object()
+        steps = flow.steps.all()
+        from .serializers import FlowStepSerializer
+
+        return Response(
+            {"count": steps.count(), "steps": FlowStepSerializer(steps, many=True).data}
+        )
+
+    @action(detail=True, methods=["get"])
+    def preview_customers(self, request, pk=None):
+        """Preview customers enrolled in this flow's campaigns"""
+        flow = self.get_object()
+        campaigns = flow.campaign_set.all()
+        customers = Customer.objects.filter(campaigns__in=campaigns).distinct()
+        from .serializers import CustomerSerializer
+
+        return Response(
+            {
+                "count": customers.count(),
+                "customers": CustomerSerializer(customers[:10], many=True).data,
+            }
+        )
+
+
+class FlowStepViewSet(viewsets.ModelViewSet):
+    queryset = FlowStep.objects.all()
+    serializer_class = FlowSerializer
+
+    def get_queryset(self):
+        """Order steps by step_number by default"""
+        queryset = super().get_queryset()
+        if self.action == "list":
+            return queryset.order_by("flow", "step_number")
+        return queryset
+
+    @action(detail=True, methods=["get"])
+    def preview(self, request, pk=None):
+        """Preview customers who will receive this step (based on flow's segment)"""
+        step = self.get_object()
+        flow = step.flow
+        campaigns = flow.campaign_set.all()
+        customers = Customer.objects.filter(campaigns__in=campaigns).distinct()
+        from .serializers import CustomerSerializer
+
+        return Response(
+            {
+                "count": customers.count(),
+                "customers": CustomerSerializer(customers[:10], many=True).data,
+                "step_info": {
+                    "step_number": step.step_number,
+                    "email_subject": step.email_subject,
+                    "delay_days": step.delay_days,
+                },
+            }
+        )
+
 
 class CampaignViewSet(viewsets.ModelViewSet):
     queryset = Campaign.objects.all()
     serializer_class = CampaignSerializer
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-        was_active = instance.is_active
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        is_active = serializer.validated_data.get("is_active", was_active)
-        if is_active and not was_active:
-            enrolled_count = instance.enroll_customers_from_segment()
-            return Response(
-                {
-                    **serializer.data,
-                    "enrolled_count": enrolled_count,
-                    "message": f"Campaign activated. {enrolled_count} customers enrolled.",
-                }
-            )
-
-        return Response(serializer.data)
-
-    @action(detail=True, methods=["post"])
-    def enroll_customers(self, request, pk=None):
-        campaign = self.get_object()
-        enrolled_count = campaign.enroll_customers_from_segment()
-        return Response(
-            {
-                "enrolled_count": enrolled_count,
-                "customer_count": campaign.customer_count,
-                "message": f"{enrolled_count} customers enrolled in campaign.",
-            }
-        )
-
-    @action(detail=True, methods=["get"])
-    def enrolled_customers(self, request, pk=None):
-        campaign = self.get_object()
-        customers = campaign.customers.all()
-        serializer = CustomerSerializer(customers, many=True)
-        return Response(serializer.data)
-
 
 @api_view(["POST"])
 def generate_segment_and_campaign(request):
-    """AI agent endpoint to generate segments and campaigns"""
+    """AI agent endpoint to generate segments and campaigns using Gemini API"""
     prompt = request.data.get("prompt", "")
 
-    # Simple AI logic (in production, use OpenAI/Claude)
-    segment_data = analyze_prompt_for_segment(prompt)
-    campaign_data = generate_campaign_from_prompt(prompt)
+    if not prompt:
+        return Response(
+            {"error": "Prompt is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
-    return Response({"segment": segment_data, "campaign": campaign_data})
+    try:
+        # Use GeminiCampaignAgent for intelligent generation
+        agent = GeminiCampaignAgent()
+        result = agent.generate_complete_campaign(prompt)
+
+        return Response({"segment": result["segment"], "campaign": result["campaign"]})
+
+    except ValueError as e:
+        # Fallback to rule-based generation if Gemini API key is not configured
+        if "API key not provided" in str(e):
+            segment_data = analyze_prompt_for_segment(prompt)
+            campaign_data = generate_campaign_from_prompt(prompt)
+
+            return Response(
+                {
+                    "segment": segment_data,
+                    "campaign": campaign_data,
+                    "note": "Using rule-based generation. Set GEMINI_API_KEY for AI-powered generation.",
+                }
+            )
+        else:
+            raise
 
 
 def analyze_prompt_for_segment(prompt):
@@ -161,4 +208,104 @@ def generate_campaign_from_prompt(prompt):
             "Highlight new arrivals in their favorite categories",
             "Social proof with customer reviews and testimonials",
         ],
+    }
+
+
+@api_view(["POST"])
+def generate_flow(request):
+    """Generate a multi-step email flow using Gemini AI"""
+    prompt = request.data.get("prompt", "")
+
+    if not prompt:
+        return Response(
+            {"error": "Prompt is required"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        # Create Gemini agent for flow generation
+        agent = GeminiCampaignAgent()
+
+        # Generate flow steps with delays
+        prompt_text = f"""
+        Generate a multi-step email marketing flow based on the following business objective:
+
+        Business Objective: {prompt}
+
+        Requirements:
+        1. Create a sequence of 3-5 email steps with delays between them
+        2. Each step should have an email subject and content guidelines
+        3. Include specific delays (in days) between steps
+        4. Make each step progressively move the customer toward the goal
+        5. Each step should have a clear purpose (e.g., awareness, engagement, conversion, retention)
+
+        Output Format:
+        Return only the flow definition in JSON format like:
+        {{
+          "flow_name": "Descriptive name for the flow",
+          "description": "Brief description of the flow's purpose",
+          "steps": [
+            {{
+              "step_number": 1,
+              "email_subject": "Engaging subject line (max 50 chars)",
+              "email_content_guidelines": "Specific guidelines for email content",
+              "delay_days": 0  // Days to wait before this step (0 for first step)
+            }},
+            {{
+              "step_number": 2,
+              "email_subject": "Engaging subject line (max 50 chars)",
+              "email_content_guidelines": "Specific guidelines for email content",
+              "delay_days": 10  // Days to wait after step 1
+            }}
+          ]
+        }}
+        """
+
+        response = agent.model.generate_content(prompt_text)
+        flow_data = agent._extract_json_from_response(response.text)
+
+        return Response({"flow": flow_data})
+
+    except ValueError as e:
+        if "API key not provided" in str(e):
+            # Fallback to rule-based flow generation
+            flow_data = generate_rule_based_flow(prompt)
+            return Response(
+                {
+                    "flow": flow_data,
+                    "note": "Using rule-based generation. Set GEMINI_API_KEY for AI-powered generation.",
+                }
+            )
+        else:
+            raise
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def generate_rule_based_flow(prompt):
+    """Generate a simple rule-based flow for fallback"""
+    steps = [
+        {
+            "step_number": 1,
+            "email_subject": "We Miss You!",
+            "email_content_guidelines": "Send a friendly reminder about your brand with a special offer",
+            "delay_days": 0,
+        },
+        {
+            "step_number": 2,
+            "email_subject": "Exclusive Just for You",
+            "email_content_guidelines": "Provide a personalized discount code to encourage return purchase",
+            "delay_days": 5,
+        },
+        {
+            "step_number": 3,
+            "email_subject": "Last Chance!",
+            "email_content_guidelines": "Create urgency with a time-limited offer highlighting bestsellers",
+            "delay_days": 5,
+        },
+    ]
+
+    return {
+        "flow_name": "Win-Back Campaign",
+        "description": "Multi-step campaign to re-engage inactive customers",
+        "steps": steps,
     }

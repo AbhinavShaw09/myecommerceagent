@@ -25,6 +25,20 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 
+interface Customer {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
+  phone: string
+  city: string
+  state: string
+  lifetime_value: number
+  total_orders: number
+  last_order_date: string
+  email_subscribed: boolean
+}
+
 const customerSchema = z.object({
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
   first_name: z.string().min(1, 'First name is required'),
@@ -46,7 +60,7 @@ interface CustomerFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
-  initialData?: Partial<CustomerFormData>
+  initialData?: Partial<CustomerFormData> & { id?: number }
 }
 
 export function CustomerForm({
@@ -88,8 +102,14 @@ export function CustomerForm({
 
   const handleSubmit = async (data: CustomerFormData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/customers/', {
-        method: 'POST',
+      const isEditing = initialData?.id
+      const url = isEditing 
+        ? `http://localhost:8000/api/customers/${initialData.id}/`
+        : 'http://localhost:8000/api/customers/'
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -102,7 +122,7 @@ export function CustomerForm({
         onOpenChange(false)
       }
     } catch (error) {
-      console.error('Error creating customer:', error)
+      console.error('Error saving customer:', error)
     }
   }
 

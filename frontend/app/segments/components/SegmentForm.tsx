@@ -71,7 +71,7 @@ interface SegmentFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
-  initialData?: Partial<SegmentFormData>
+  initialData?: Partial<SegmentFormData> & { id?: number }
 }
 
 export function SegmentForm({
@@ -97,8 +97,14 @@ export function SegmentForm({
 
   const handleSubmit = async (data: SegmentFormData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/segments/', {
-        method: 'POST',
+      const isEditing = initialData?.id
+      const url = isEditing 
+        ? `http://localhost:8000/api/segments/${initialData.id}/`
+        : 'http://localhost:8000/api/segments/'
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -113,7 +119,7 @@ export function SegmentForm({
         onOpenChange(false)
       }
     } catch (error) {
-      console.error('Error creating segment:', error)
+      console.error('Error saving segment:', error)
     }
   }
 

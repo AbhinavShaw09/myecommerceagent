@@ -22,14 +22,15 @@ from customers import views
 from . import views as api_views
 
 router = DefaultRouter()
-router.register(r'customers', views.CustomerViewSet)
-router.register(r'segments', views.SegmentViewSet)
-router.register(r'flows', views.FlowViewSet)
-router.register(r'campaigns', views.CampaignViewSet)
+router.register(r"customers", views.CustomerViewSet)
+router.register(r"segments", views.SegmentViewSet)
+router.register(r"flows", views.FlowViewSet)
+router.register(r"flow-steps", views.FlowStepViewSet)
+router.register(r"campaigns", views.CampaignViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", api_views.health_check, name="health_check"),
-    path('api/', include(router.urls)),
-    path('api/generate/', views.generate_segment_and_campaign, name='generate'),
+    path("api/", include(router.urls)),
+    path("api/generate/", views.generate_segment_and_campaign, name="generate"),
 ]

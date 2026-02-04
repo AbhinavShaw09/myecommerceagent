@@ -67,19 +67,28 @@ class Segment(models.Model):
             operator = condition["operator"]
             value = condition["value"]
 
-            converted_value = self._convert_value(field, value)
+            # Smart handling for email domains
+            if field == "email" and operator == "equals":
+                # If the value doesn't contain @, treat it as a domain and use contains
+                if "@" not in str(value):
+                    queryset = queryset.filter(**{f"{field}__icontains": value})
+                else:
+                    converted_value = self._convert_value(field, value)
+                    queryset = queryset.filter(**{field: converted_value})
+            else:
+                converted_value = self._convert_value(field, value)
 
-            if operator == "equals":
-                queryset = queryset.filter(**{field: converted_value})
-            elif operator == "contains":
-                queryset = queryset.filter(**{f"{field}__icontains": value})
-            elif operator == "greater_than":
-                queryset = queryset.filter(**{f"{field}__gt": converted_value})
-            elif operator == "less_than":
-                queryset = queryset.filter(**{f"{field}__lt": converted_value})
-            elif operator == "in_last_days":
-                days_ago = timezone.now() - timedelta(days=int(value))
-                queryset = queryset.filter(**{f"{field}__gte": days_ago})
+                if operator == "equals":
+                    queryset = queryset.filter(**{field: converted_value})
+                elif operator == "contains":
+                    queryset = queryset.filter(**{f"{field}__icontains": value})
+                elif operator == "greater_than":
+                    queryset = queryset.filter(**{f"{field}__gt": converted_value})
+                elif operator == "less_than":
+                    queryset = queryset.filter(**{f"{field}__lt": converted_value})
+                elif operator == "in_last_days":
+                    days_ago = timezone.now() - timedelta(days=int(value))
+                    queryset = queryset.filter(**{f"{field}__gte": days_ago})
 
         return queryset
 

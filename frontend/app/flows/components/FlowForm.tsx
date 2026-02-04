@@ -46,7 +46,7 @@ interface FlowFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
-  initialData?: Partial<FlowFormData>
+  initialData?: Partial<FlowFormData> & { id?: number }
 }
 
 export function FlowForm({
@@ -82,8 +82,14 @@ export function FlowForm({
 
   const handleSubmit = async (data: FlowFormData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/flows/', {
-        method: 'POST',
+      const isEditing = initialData?.id
+      const url = isEditing 
+        ? `http://localhost:8000/api/flows/${initialData.id}/`
+        : 'http://localhost:8000/api/flows/'
+      const method = isEditing ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -98,7 +104,7 @@ export function FlowForm({
         onOpenChange(false)
       }
     } catch (error) {
-      console.error('Error creating flow:', error)
+      console.error('Error saving flow:', error)
     }
   }
 

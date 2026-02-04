@@ -110,7 +110,7 @@ export default function FlowsPage() {
                   <div className="space-y-2">
                     {flow.steps.map((step, index) => (
                       <div key={step.id} className="flex items-center gap-3 p-3 bg-muted rounded">
-                        <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">
+                        <div className="shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium">
                           {step.step_number}
                         </div>
                         <div className="flex-1">

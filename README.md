@@ -15,7 +15,7 @@ A full-stack agentic AI application for email marketing and customer data manage
 - **Backend**: Django + Django REST Framework
 - **Frontend**: Next.js 16 + TypeScript + Tailwind CSS + shadcn/ui
 - **Database**: SQLite
-- **AI**: Simple rule-based logic (can be extended with OpenAI/Claude)
+- **AI**: Google Gemini API integration
 - **Forms**: React Hook Form + Zod validation
 - **Notifications**: Sonner toast library
 
@@ -39,6 +39,29 @@ make dev        # Start Next.js server on http://localhost:3000
 ### 3. Start Both Services
 ```bash
 make start      # Start both frontend and backend
+```
+
+## AI Assistant Integration
+
+The application now includes a Gemini-based AI assistant that can:
+
+- Generate customer segments from natural language prompts
+- Create complete email campaign elements
+- Suggest optimal send times and content ideas
+
+### Usage
+
+1. Set your Gemini API key:
+```bash
+export GEMINI_API_KEY="your_api_key_here"
+```
+
+2. Use the AI assistant endpoint:
+```bash
+POST /api/generate/
+{
+  "prompt": "I want to improve revenue from high lifetime value customers that haven't purchased recently."
+}
 ```
 
 ## API Endpoints
@@ -95,9 +118,8 @@ The setup includes 5 sample customers with varying:
 
 ## Future Enhancements
 
-1. **Real AI Integration** - Connect to OpenAI/Claude for smarter segment and campaign generation
-2. **Advanced Segmentation** - More complex conditions and operators
-3. **Email Templates** - Visual email builder
-4. **Analytics Dashboard** - Campaign performance metrics
-5. **A/B Testing** - Test different email variations
-6. **Automation Triggers** - Event-based email sending
+1. **Advanced AI Features** - More sophisticated prompt engineering and response handling
+2. **Real-time Analytics** - Campaign performance tracking
+3. **Multi-channel Support** - SMS and push notifications
+4. **A/B Testing** - Test different email variations
+5. **Automation Triggers** - Event-based email sending
